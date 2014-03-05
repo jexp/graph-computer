@@ -1,0 +1,83 @@
+latest idea
+
+only store minimum bytes of each long
+store a prefix with the number of bytes and sign-indicator (needs 3+1 bit)  (high-bits)
+-> use pre-defined pattern constants for 16 versions (8 bytes + 2x sign)
+use rest of prefix byte for rll counter (low bits)
+
+compressed representation
+
+large node each consisting: 
+#1 array-entry per reltype and direction, first value is combined bitset rel-type and dir
+#2 array for the selected properties
+-> either array with key,value pairs or array index = prop-id index (w/ lookup)
+-> re-map strings to ids (via map lookup)
+-> compress fields
+-> 
+
+-> one bytebuffer -> use kind of pages
+first page is
+fixed page size:
+
+|current insert pos, == page-size when full| page  |last-pos ->pointer to new page|
+
+initial page positions node-id * page-size
+
+two step process???
+1. load with uncompressed-storage ?
+2. then sort, delta, rll-encode, compress
+
+read relationship-store-file
+ignore chains
+
+add the target-node-ids incrementally to each of the buckets -> do we have to sort them?
+
+if needed store rel-properties with  the target-node-id, often it is just a single quality value
+
+- how to handle timestamps ? filter intervals on read ?
+
+- also store in-degree, out-degree 
+
+- rel-ids should be blocks of a sensible size, like 1024,4096 or 8192
+
+what would an API look like? like the cursor API?
+
+prop(node-id,prop)
+
+intIterator targets(node-id,direction,type)
+
+rel-prop(source,target)
+
+nodes = int[][]
+
+or byte[] pages -> chained
+
+// type << 1 | dir -> int 0...x -> offset : direct jump to header (read 2 values: offset, next-offset) -> jump to offset and iterate
+// header of x bytes
+// alternative: mapping of type + dir -> header-offset -> subset of type, dir possible, mapping with header approach from above
+// per type and dir, target node id as delta, x(n) + x(n-1)
+// storage as VQT?? + RLL
+// or compressed bitset-chunks RLL encoded
+// int[][] -> byte[][] -> preallocated avg sized and aligned byte arrays
+// reallocSortEncode() -> first int -> size of encoded block, after that unsorted but encoded when limit is reached -> decode sort encode compress, reallocate block
+// todo choose if encode/compress according to available memory, i.e. we need rels * 2 * 4 bytes for uncompressed storage
+
+
+for mutable algorithms dedicate room at beginning of props field for writing
+or have a separate field for the written values
+index 0 -> props-array
+index 1... -> rel-block arrays
+		   field 0 -> lastblock, count, type, direction 
+		   field 1 -> target-node-id
+		   field 1+ -> delta to predeccessor
+           --> RLL
+when we also store rel-property(ies)
+           try to compress rel-values into one int-field
+           alternate target-node-id with rel-values, flag in header
+
+
+Random in GPU ? -> pregenerate large random field and iterate over that?
+
+look into matrix compression for sparse matrices
+look into matrix operations for compressed sparse matrices
+look into graph algorithms on matrices
